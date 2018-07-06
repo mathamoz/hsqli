@@ -15,10 +15,10 @@ import (
 )
 
 var app_version = "0.1.0"
-var history_database, _ = homedir.Expand("~/.shist")
+var history_database, _ = homedir.Expand("~/.hsqli")
 var bash_history, _ = homedir.Expand("~/.bash_history")
 
-var log = logging.MustGetLogger("shist")
+var log = logging.MustGetLogger("hsqli")
 
 var (
 	printHelp bool
@@ -52,14 +52,14 @@ func save_history(database *sql.DB, entry string) {
 }
 
 func main() {
-	log_backend, err := logging.NewSyslogBackend("shist")
+	log_backend, err := logging.NewSyslogBackend("hsqli")
 
 	if err != nil { fmt.Printf("Error: %", err) }
 
 	logging.SetBackend(log_backend)
         var format = logging.MustStringFormatter("%{level} %{message}")
         logging.SetFormatter(format)
-        logging.SetLevel(logging.INFO, "shist")
+        logging.SetLevel(logging.INFO, "hsqli")
 
 	database, _ := sql.Open("sqlite3", history_database)
 
@@ -74,7 +74,7 @@ func main() {
 
 	if printHelp {
 		fmt.Println("NAME:")
-		fmt.Println("    shist - A smart bash history utility\n")
+		fmt.Println("    hsqli - A smart bash history utility\n")
 		fmt.Println("DESCRIPTION:")
 		fmt.Println("    A smart utility for saving and fetching bash command history.\n")
 		fmt.Println("VERSION:")
