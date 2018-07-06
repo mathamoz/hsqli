@@ -24,11 +24,31 @@ var (
 	printHelp bool
         version bool
         fetch bool
+        load bool
 )
 
 func init_database(database *sql.DB) {
     statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, entry TEXT, created DATETIME DEFAULT CURRENT_TIMESTAMP)")
     statement.Exec()
+}
+
+func save_history(database *sql.DB, entry string) {
+	rows, _ := database.Query("SELECT count(*) FROM history where entry = ?", entry)
+
+	var matches int
+
+	defer rows.Close()
+	for rows.Next() {
+		rows.Scan(&matches)
+	}
+
+	if (matches <= 0) {
+		statement, _ := database.Prepare("INSERT INTO history (entry) VALUES (?)")
+		_, err := statement.Exec(entry)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func main() {
@@ -47,6 +67,7 @@ func main() {
 
 	flag.BoolVar(&printHelp, "help", false, "Print this help message.")
         flag.BoolVar(&fetch, "fetch", false, "Save out the bash history file")
+        flag.BoolVar(&load, "load", false, "Load the current bash history file")
         flag.BoolVar(&version, "version", false, "Show Version")
 
         flag.Parse()
@@ -87,6 +108,25 @@ func main() {
 		os.Exit(0)
 	}
 
+	if load {
+		var processed = 0
+
+		fmt.Println("Importing bash history...")
+		if _, err := os.Stat(bash_history); err == nil {
+			f, _ := os.Open(bash_history)
+			scanner := bufio.NewScanner(f)
+
+			for scanner.Scan() {
+				line := scanner.Text()
+				save_history(database, line)
+				processed += 1
+			}
+		}
+
+		fmt.Printf("Imported %v history entries.\n", processed)
+		os.Exit(0)
+	}
+
         if version {
                 fmt.Println(app_version)
                 os.Exit(0)
@@ -99,24 +139,10 @@ func main() {
 		if err != nil && err == io.EOF {
 			break
 		}
+
 		input = strings.TrimSpace(input)
 
-		rows, _ := database.Query("SELECT count(*) FROM history where entry = ?", input)
-
-		var count int
-
-		defer rows.Close()
-		for rows.Next() {
-			rows.Scan(&count)
-		}
-
-		if (count <= 0) {
-			statement, _ := database.Prepare("INSERT INTO history (entry) VALUES (?)")
-			_, err := statement.Exec(input)
-			if err != nil {
-				panic(err)
-			}
-		}
+		save_history(database, input)
 	}
 }
 

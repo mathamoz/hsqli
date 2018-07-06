@@ -4,6 +4,8 @@ NB: Make sure to save off a copy of your `~/.bash_history` before using this too
 
 Place the `hsqli` binary somewhere in your path and then add the following to your `~/.bashrc`
 
+You can run `shist -load` to import your current bash history prior to adding the lines below.
+
 ```
 prompt_command() {
     history | sed '$!d' | cut -c 8- | hsqli && history -c && hsqli -fetch && history -r
